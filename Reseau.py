@@ -34,12 +34,52 @@ class Reseau:
         self.strat = strat
 
     def valider_reseau(self) -> bool:
-        # TODO
-        return False
+
+        # Check that the entry node exists
+        if self.noeud_entree not in self.noeuds:
+            return False
+
+        # Start exploring from the entry node
+        visites = set()
+        a_visiter = [self.noeud_entree]
+
+        while a_visiter:
+            noeud = a_visiter.pop()
+
+            if noeud in visites:
+                continue
+
+            visites.add(noeud)
+
+            # Find all nodes connected to this node
+            for a, b in self.arcs:
+                if a == noeud and b not in visites:
+                    a_visiter.append(b)
+
+                elif b == noeud and a not in visites:
+                    a_visiter.append(a)
+
+        # All nodes must be connected to the entry
+        return len(visites) == len(self.noeuds)
 
     def valider_distribution(self, t: Terrain) -> bool:
-        # TODO
-        return False
+
+        # Check that the electrical network is valid
+        if not self.valider_reseau():
+            return False
+
+        # Get the positions of all clients
+        clients = t.get_clients()
+
+        # Get the positions of all network nodes
+        positions_noeuds = set(self.noeuds.values())
+
+        # Check that every client has a network node
+        for client in clients:
+            if client not in positions_noeuds:
+                return False
+
+        return True
 
     def configurer(self, t: Terrain):
         self.noeud_entree, self.noeuds, self.arcs  = self.strat.configurer(t)
