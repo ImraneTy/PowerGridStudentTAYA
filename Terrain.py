@@ -18,7 +18,7 @@ class Terrain:
         with open(fichier, "r") as f:
             ligne_max = 0
             for ligne in f:
-                ligne = list(ligne)[:-1]
+                ligne = list(ligne.rstrip('\r\n'))
                 ligne_cases = []
                 n = 0
                 for c in ligne:
