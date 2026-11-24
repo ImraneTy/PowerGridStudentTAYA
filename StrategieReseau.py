@@ -7,10 +7,102 @@ class StrategieReseau:
         return -1, {}, []
 
 class StrategieReseauManuelle(StrategieReseau):
-    def configurer(self, t: Terrain) -> tuple[int, dict[int, tuple[int, int]], list[tuple[int, int]]]:
-        # TODO
-        return -1, {}, []
 
+    def configurer(self, t: Terrain) -> tuple[int, dict[int, tuple[int, int]], list[tuple[int, int]]]:
+
+        noeuds = {}
+        arcs = []
+        noeud_entree = -1
+
+        entree = t.get_entree()
+
+        while True:
+            print("\n===== CONFIGURATION MANUELLE =====")
+            print("1. Ajouter un noeud")
+            print("2. Ajouter un arc")
+            print("3. Definir le noeud d'entree")
+            print("4. Afficher le reseau")
+            print("5. Terminer")
+
+            choix = input("Votre choix : ").strip()
+
+            if choix == "1":
+                try:
+                    n = int(input("Identifiant du noeud : "))
+                    x = int(input("Ligne : "))
+                    y = int(input("Colonne : "))
+                except ValueError:
+                    print("Erreur : entrez des entiers.")
+                    continue
+
+                if n < 0 or n in noeuds:
+                    print("Identifiant invalide ou deja utilise.")
+                elif not (0 <= x < len(t.cases) and
+                          0 <= y < len(t.cases[x])):
+                    print("Position hors du terrain.")
+                elif (x, y) in noeuds.values():
+                    print("Cette position est deja occupee.")
+                else:
+                    noeuds[n] = (x, y)
+                    print("Noeud ajoute.")
+
+            elif choix == "2":
+                try:
+                    n1 = int(input("Premier noeud : "))
+                    n2 = int(input("Deuxieme noeud : "))
+                except ValueError:
+                    print("Erreur : entrez des entiers.")
+                    continue
+
+                if n1 not in noeuds or n2 not in noeuds:
+                    print("Un des noeuds n'existe pas.")
+                    continue
+
+                if n1 == n2:
+                    print("Impossible de relier un noeud a lui-meme.")
+                    continue
+
+                x1, y1 = noeuds[n1]
+                x2, y2 = noeuds[n2]
+
+                if abs(x1 - x2) + abs(y1 - y2) != 1:
+                    print("Les noeuds doivent etre voisins.")
+                    continue
+
+                arc = (min(n1, n2), max(n1, n2))
+
+                if arc in arcs:
+                    print("Cet arc existe deja.")
+                else:
+                    arcs.append(arc)
+                    print("Arc ajoute.")
+
+            elif choix == "3":
+                try:
+                    n = int(input("Identifiant du noeud d'entree : "))
+                except ValueError:
+                    print("Identifiant invalide.")
+                    continue
+
+                if n in noeuds and noeuds[n] == entree:
+                    noeud_entree = n
+                    print("Entree definie.")
+                else:
+                    print("Le noeud doit etre sur la case d'entree.")
+
+            elif choix == "4":
+                print("\nNoeuds :", noeuds)
+                print("Arcs :", arcs)
+                print("Noeud d'entree :", noeud_entree)
+
+            elif choix == "5":
+                if noeud_entree == -1:
+                    print("Attention : entree non definie.")
+
+                return noeud_entree, noeuds, arcs
+
+            else:
+                print("Choix invalide.")
 class StrategieReseauAuto(StrategieReseau):
 
     def configurer(self, t: Terrain) -> tuple[int, dict[int, tuple[int, int]], list[tuple[int, int]]]:
