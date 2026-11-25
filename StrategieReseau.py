@@ -1,6 +1,32 @@
 
 from Terrain import Terrain, Case
 from collections import deque
+import heapq
+
+# Couts definis dans le sujet : 1 arc = 1.5 M EUR, 1 noeud = 1 M EUR (2 M EUR sur un obstacle)
+COUT_ARC = 1.5
+COUT_NOEUD = 1
+COUT_NOEUD_OBSTACLE = 2
+
+
+def cout_case(t: Terrain, case: tuple[int, int]) -> float:
+    """Cout pour etendre le reseau sur une case : le nouveau noeud + l'arc qui le relie."""
+    l, c = case
+    if t[l][c] == Case.OBSTACLE:
+        return COUT_ARC + COUT_NOEUD_OBSTACLE
+    return COUT_ARC + COUT_NOEUD
+
+
+def cases_voisines(t: Terrain, case: tuple[int, int]) -> list[tuple[int, int]]:
+    """Les 4 voisines (haut, bas, gauche, droite) qui sont dans le terrain."""
+    l, c = case
+    voisines = []
+    for dl, dc in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+        nl, nc = l + dl, c + dc
+        if 0 <= nl < t.hauteur and 0 <= nc < t.largeur:
+            voisines.append((nl, nc))
+    return voisines
+
 
 class StrategieReseau:
     def configurer(self, t: Terrain) -> tuple[int, dict[int, tuple[int, int]], list[tuple[int, int]]]:
@@ -175,3 +201,62 @@ class StrategieReseauAuto(StrategieReseau):
 
         return 0, noeuds, arcs
 
+
+class StrategieReseauOptimisee(StrategieReseau):
+    """Amelioration de StrategieReseauAuto : on minimise le cout total du reseau
+    au lieu de prendre le plus court chemin depuis l'entree pour chaque client
+    (heuristique gloutonne).
+
+    On part de l'entree. Tant qu'il reste des clients non raccordes :
+      - on lance un Dijkstra depuis TOUTES les cases deja dans le reseau a la fois ;
+      - on s'arrete au premier client atteint (le moins cher a raccorder) ;
+      - on ajoute au reseau le chemin qui y mene.
+    Le cout d'un pas vaut 1.5 (arc) + 1 (noeud), ou 1.5 + 2 sur un obstacle :
+    l'algorithme contourne donc les obstacles quand c'est moins cher.
+    """
+
+    def _chemin_vers_client_le_plus_proche(self, t, reseau, clients_restants):
+        distances = {case: 0 for case in reseau}
+        precedent = {}
+        file = [(0, case) for case in reseau]
+        heapq.heapify(file)
+        while file:
+            dist, case = heapq.heappop(file)
+            if dist > distances[case]:
+                continue  # entree perimee dans la file
+            if case in clients_restants:
+                # on remonte le chemin jusqu'au reseau existant
+                chemin = [case]
+                while chemin[-1] in precedent:
+                    chemin.append(precedent[chemin[-1]])
+                chemin.reverse()  # du reseau vers le client
+                return chemin
+            for voisine in cases_voisines(t, case):
+                nouvelle_dist = dist + cout_case(t, voisine)
+                if voisine not in distances or nouvelle_dist < distances[voisine]:
+                    distances[voisine] = nouvelle_dist
+                    precedent[voisine] = case
+                    heapq.heappush(file, (nouvelle_dist, voisine))
+        return None  # client inaccessible (n'arrive pas : on peut passer partout)
+
+    def configurer(self, t: Terrain) -> tuple[int, dict[int, tuple[int, int]], list[tuple[int, int]]]:
+        entree = t.get_entree()
+        if entree == (-1, -1):
+            return -1, {}, []
+
+        ids = {entree: 0}           # coordonnees -> numero du noeud
+        arcs = []
+        clients_restants = set(t.get_clients()) - {entree}
+
+        while clients_restants:
+            chemin = self._chemin_vers_client_le_plus_proche(t, set(ids), clients_restants)
+            if chemin is None:
+                break
+            for precedente, case in zip(chemin, chemin[1:]):
+                if case not in ids:
+                    ids[case] = len(ids)
+                arcs.append((min(ids[precedente], ids[case]), max(ids[precedente], ids[case])))
+            clients_restants.discard(chemin[-1])
+
+        noeuds = {n: coords for coords, n in ids.items()}
+        return 0, noeuds, arcs
