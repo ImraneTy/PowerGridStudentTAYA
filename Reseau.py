@@ -86,31 +86,52 @@ class Reseau:
         self.noeud_entree, self.noeuds, self.arcs  = self.strat.configurer(t)
 
     def afficher(self) -> None:
-        # TODO
-        pass
+        print("Noeud d'entree : {}".format(self.noeud_entree))
+        print("Noeuds ({}) : {}".format(len(self.noeuds), self.noeuds))
+        print("Arcs ({}) : {}".format(len(self.arcs), self.arcs))
+        if not self.noeuds:
+            return
+        # Dessin du reseau : une case du terrain = 2 caracteres de large et 2 de haut,
+        # pour avoir la place de dessiner les arcs ("-" horizontal, "|" vertical)
+        hauteur = max(l for l, _ in self.noeuds.values()) + 1
+        largeur = max(c for _, c in self.noeuds.values()) + 1
+        grille = [[" "] * (2 * largeur - 1) for _ in range(2 * hauteur - 1)]
+        for n, (l, c) in self.noeuds.items():
+            grille[2 * l][2 * c] = "E" if n == self.noeud_entree else "o"
+        for n1, n2 in self.arcs:
+            if n1 not in self.noeuds or n2 not in self.noeuds:
+                continue
+            (l1, c1), (l2, c2) = self.noeuds[n1], self.noeuds[n2]
+            if l1 == l2 and abs(c1 - c2) == 1:
+                grille[2 * l1][c1 + c2] = "-"
+            elif c1 == c2 and abs(l1 - l2) == 1:
+                grille[l1 + l2][2 * c1] = "|"
+        for ligne in grille:
+            print("".join(ligne).rstrip())
 
     def afficher_avec_terrain(self, t: Terrain) -> None:
+        # Correction : "elif" au lieu de plusieurs "if" (sinon un espace en trop par case)
         for ligne, l in enumerate(t.cases):
             for colonne, c in enumerate(l):
                 if (ligne, colonne) not in self.noeuds.values():
                     if c == Case.OBSTACLE:
                         print("X", end="")
-                    if c == Case.CLIENT:
+                    elif c == Case.CLIENT:
                         print("C", end="")
-                    if c == Case.VIDE:
+                    elif c == Case.VIDE:
                         print("~", end="")
-                    if c == Case.ENTREE:
+                    elif c == Case.ENTREE:
                         print("E", end="")
                     else:
                         print(" ", end="")
                 else:
                     if c == Case.OBSTACLE:
                         print("T", end="")
-                    if c == Case.CLIENT:
+                    elif c == Case.CLIENT:
                         print("C", end="")
-                    if c == Case.VIDE:
+                    elif c == Case.VIDE:
                         print("+", end="")
-                    if c == Case.ENTREE:
+                    elif c == Case.ENTREE:
                         print("E", end="")
                     else:
                         print(" ", end="")
