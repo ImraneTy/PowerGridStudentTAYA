@@ -67,11 +67,11 @@ class Terrain:
             for c in l:
                 if c == Case.OBSTACLE:
                     print("X", end="")
-                if c == Case.CLIENT:
+                elif c == Case.CLIENT:
                     print("C", end="")
-                if c == Case.VIDE:
+                elif c == Case.VIDE:
                     print("~", end="")
-                if c == Case.ENTREE:
+                elif c == Case.ENTREE:
                     print("E", end="")
                 else:
                     print(" ", end="")
